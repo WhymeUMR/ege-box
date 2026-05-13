@@ -1,10 +1,7 @@
-"""Generate launcher icon variants from assets/logo.png.
+"""Generate the launcher icon from assets/logo.png.
 
-Outputs (all 1024x1024):
-  assets/icon_light.png       - logo on white background (default / iOS light)
-  assets/icon_dark.png        - logo on black background (Android dark fallback)
-  assets/icon_ios_dark.png    - logo on transparent (iOS dark mode adds black)
-  assets/icon_monochrome.png  - white silhouette on transparent (Android themed)
+Output:
+  assets/icon.png  - 1024x1024, logo on Off White (#F2F2F2) background.
 """
 from pathlib import Path
 from PIL import Image
@@ -35,19 +32,8 @@ def main() -> None:
     logo = Image.open(SRC).convert("RGBA")
     fitted = fit(logo, SIZE, PADDING)
 
-    compose((255, 255, 255, 255), fitted).save(ROOT / "assets/icon_light.png")
-    compose((0, 0, 0, 255), fitted).save(ROOT / "assets/icon_dark.png")
-    compose((0, 0, 0, 0), fitted).save(ROOT / "assets/icon_ios_dark.png")
-
-    # Monochrome: white silhouette from alpha channel
-    alpha = fitted.split()[-1]
-    mono_logo = Image.merge("RGBA", (
-        Image.new("L", fitted.size, 255),
-        Image.new("L", fitted.size, 255),
-        Image.new("L", fitted.size, 255),
-        alpha,
-    ))
-    compose((0, 0, 0, 0), mono_logo).save(ROOT / "assets/icon_monochrome.png")
+    # Off White background per palette (#F2F2F2)
+    compose((0xF2, 0xF2, 0xF2, 255), fitted).save(ROOT / "assets/icon.png")
 
     print("ok")
 

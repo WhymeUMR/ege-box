@@ -62,16 +62,27 @@ flutter:
   assets:
     - assets/
 
+  fonts:
+    - family: SpaceGrotesk
+      fonts:
+        - asset: assets/fonts/SpaceGrotesk-Light.ttf
+          weight: 300
+        - asset: assets/fonts/SpaceGrotesk-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/SpaceGrotesk-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/SpaceGrotesk-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/SpaceGrotesk-Bold.ttf
+          weight: 700
+
 flutter_launcher_icons:
   android: true
   ios: true
   remove_alpha_ios: true
-  image_path: "assets/icon_light.png"
-  image_path_ios_dark_transparent: "assets/icon_ios_dark.png"
-  image_path_ios_tinted_grayscale: "assets/icon_monochrome.png"
-  adaptive_icon_background: "#FFFFFF"
+  image_path: "assets/icon.png"
+  adaptive_icon_background: "#F2F2F2"
   adaptive_icon_foreground: "assets/logo.png"
-  adaptive_icon_monochrome: "assets/icon_monochrome.png"
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
