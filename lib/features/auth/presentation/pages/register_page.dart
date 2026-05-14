@@ -49,7 +49,7 @@ class _RegisterPageState extends State<RegisterPage> {
           );
       if (!mounted) return;
       Navigator.of(context).pushNamedAndRemoveUntil(
-        AppRouter.home,
+        AppRouter.onboardingClass,
         (_) => false,
       );
     } on AuthException catch (e) {
@@ -100,6 +100,7 @@ class _RegisterPageState extends State<RegisterPage> {
                     controller: _nameCtrl,
                     textInputAction: TextInputAction.next,
                     autofillHints: const [AutofillHints.givenName],
+                    maxLength: AuthService.nameMaxLength,
                   ),
                   const SizedBox(height: 10),
                   PillTextField(
@@ -116,6 +117,7 @@ class _RegisterPageState extends State<RegisterPage> {
                     obscureText: true,
                     textInputAction: TextInputAction.next,
                     autofillHints: const [AutofillHints.newPassword],
+                    maxLength: AuthService.passwordMaxLength,
                   ),
                   const SizedBox(height: 6),
                   Padding(
@@ -137,6 +139,7 @@ class _RegisterPageState extends State<RegisterPage> {
                     obscureText: true,
                     textInputAction: TextInputAction.done,
                     onSubmitted: (_) => _onSubmit(),
+                    maxLength: AuthService.passwordMaxLength,
                   ),
                   const Spacer(),
                   PillPrimaryButton(

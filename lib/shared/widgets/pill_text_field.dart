@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../../core/theme/app_colors.dart';
 
@@ -15,6 +16,7 @@ class PillTextField extends StatelessWidget {
     this.onChanged,
     this.onSubmitted,
     this.autofillHints,
+    this.maxLength,
   });
 
   final String hint;
@@ -25,6 +27,10 @@ class PillTextField extends StatelessWidget {
   final ValueChanged<String>? onChanged;
   final ValueChanged<String>? onSubmitted;
   final Iterable<String>? autofillHints;
+
+  /// Жёсткий лимит длины ввода (через [LengthLimitingTextInputFormatter]).
+  /// Счётчик не показываем — просто перестаём принимать символы.
+  final int? maxLength;
 
   @override
   Widget build(BuildContext context) {
@@ -43,6 +49,9 @@ class PillTextField extends StatelessWidget {
         onChanged: onChanged,
         onSubmitted: onSubmitted,
         autofillHints: autofillHints,
+        inputFormatters: [
+          if (maxLength != null) LengthLimitingTextInputFormatter(maxLength),
+        ],
         cursorColor: AppColors.primary,
         // Тап вне поля — скрыть клавиатуру.
         onTapOutside: (_) => FocusManager.instance.primaryFocus?.unfocus(),

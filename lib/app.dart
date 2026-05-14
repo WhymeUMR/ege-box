@@ -19,10 +19,33 @@ class EgeBoxApp extends StatelessWidget {
         title: AppStrings.appTitle,
         theme: AppTheme.theme,
         onGenerateRoute: AppRouter.onGenerateRoute,
-        initialRoute:
-            authService.isAuthenticated ? AppRouter.home : AppRouter.welcome,
+        initialRoute: _initialStack(authService).last,
+        onGenerateInitialRoutes: (initialRoute) {
+          // Возвращаем сразу несколько маршрутов в стеке, чтобы свайп
+          // назад с любого шага онбординга вёл на предыдущий, а не на
+          // главный (или welcome).
+          return [
+            for (final name in _initialStack(authService))
+              AppRouter.onGenerateRoute(RouteSettings(name: name)),
+          ];
+        },
         debugShowCheckedModeBanner: false,
       ),
     );
+  }
+
+  /// Стек маршрутов для холодного старта приложения. Последний элемент —
+  /// тот экран, который пользователь увидит; остальные лежат под ним и
+  /// открываются жестом «назад».
+  static List<String> _initialStack(AuthService auth) {
+    if (!auth.isAuthenticated) return [AppRouter.welcome];
+    final user = auth.currentUser!;
+    if (user.grade == null) {
+      return [AppRouter.onboardingClass];
+    }
+    if (user.subjects.isEmpty) {
+      return [AppRouter.onboardingClass, AppRouter.onboardingSubjects];
+    }
+    return [AppRouter.home];
   }
 }

@@ -1,9 +1,15 @@
 import 'package:flutter/material.dart';
 
-/// Жест «свайп с левого края» — закрывает текущий маршрут так же, как
-/// нативный iOS back-swipe: страница следует за пальцем, при достаточном
-/// смещении / скорости — улетает вправо и вызывается [Navigator.pop],
-/// иначе плавно возвращается на место.
+import '../../core/routing/app_router.dart';
+
+/// Жест «свайп с любого места экрана влево-вправо», который уносит
+/// текущий маршрут так же, как нативный iOS back-swipe.
+///
+/// В отличие от наивного варианта (где мы просто двигали child), здесь мы
+/// рулим непосредственно контроллером самой [TransitionRoute]: значение
+/// контроллера падает с 1 → 0 пропорционально жесту. За счёт этого
+/// `transitionsBuilder` маршрута сам красиво анимирует и нашу страницу,
+/// и страницу под ней (затемнение, сдвиг и пр.) — без чёрного экрана.
 class SwipeBack extends StatefulWidget {
   const SwipeBack({
     super.key,
@@ -25,87 +31,78 @@ class SwipeBack extends StatefulWidget {
   State<SwipeBack> createState() => _SwipeBackState();
 }
 
-class _SwipeBackState extends State<SwipeBack>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _progress = AnimationController(
-    vsync: this,
-    duration: const Duration(milliseconds: 250),
-    value: 0,
-  );
-  bool _popping = false;
+class _SwipeBackState extends State<SwipeBack> {
+  bool _dragging = false;
 
-  @override
-  void dispose() {
-    _progress.dispose();
-    super.dispose();
+  AnimationController? _routeController(BuildContext context) {
+    final route = ModalRoute.of(context);
+    if (route is SwipeablePageRoute) return route.swipeController;
+    return null;
   }
 
-  void _onDragUpdate(DragUpdateDetails d) {
+  void _onDragStart(DragStartDetails _, AnimationController c) {
+    _dragging = true;
+  }
+
+  void _onDragUpdate(DragUpdateDetails d, AnimationController c) {
     final w = MediaQuery.of(context).size.width;
-    _progress.value = (_progress.value + d.delta.dx / w).clamp(0.0, 1.0);
+    // Делим жест на ширину экрана и уменьшаем значение контроллера
+    // (1 — страница на месте, 0 — полностью «уехала»).
+    c.value = (c.value - d.delta.dx / w).clamp(0.0, 1.0);
   }
 
-  Future<void> _onDragEnd(DragEndDetails d) async {
-    if (_popping) return;
+  Future<void> _onDragEnd(DragEndDetails d, AnimationController c) async {
+    if (!_dragging) return;
+    _dragging = false;
     final velocity = d.velocity.pixelsPerSecond.dx;
-    final shouldPop =
-        _progress.value > widget.dismissThreshold ||
+    final progress = 1 - c.value; // насколько уже «утянули» страницу.
+    final shouldPop = progress > widget.dismissThreshold ||
         velocity > widget.velocityThreshold;
 
     if (shouldPop) {
-      _popping = true;
-      await _progress.animateTo(
-        1.0,
-        duration: const Duration(milliseconds: 180),
+      // Плавно докатываем до 0 и попаем route — Navigator корректно
+      // снимет страницу со стека.
+      await c.animateTo(
+        0,
+        duration: const Duration(milliseconds: 220),
         curve: Curves.easeOutCubic,
       );
       if (!mounted) return;
-      Navigator.of(context).maybePop();
+      Navigator.of(context).pop();
     } else {
-      await _progress.animateTo(
-        0.0,
-        duration: const Duration(milliseconds: 220),
+      await c.animateTo(
+        1,
+        duration: const Duration(milliseconds: 240),
         curve: Curves.easeOutCubic,
       );
     }
   }
 
-  void _onDragCancel() {
-    if (_popping) return;
-    _progress.animateTo(
-      0.0,
-      duration: const Duration(milliseconds: 220),
+  void _onDragCancel(AnimationController c) {
+    if (!_dragging) return;
+    _dragging = false;
+    c.animateTo(
+      1,
+      duration: const Duration(milliseconds: 240),
       curve: Curves.easeOutCubic,
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    final canPop = ModalRoute.of(context)?.canPop ?? false;
+    final route = ModalRoute.of(context);
+    final controller = _routeController(context);
+    final canPop = (route?.canPop ?? false) && controller != null;
 
-    // Контент страницы — едет за пальцем и слегка теряет непрозрачность.
-    final content = AnimatedBuilder(
-      animation: _progress,
-      builder: (context, child) {
-        final w = MediaQuery.of(context).size.width;
-        final t = _progress.value;
-        return Transform.translate(
-          offset: Offset(t * w, 0),
-          child: Opacity(opacity: 1 - t * 0.35, child: child),
-        );
-      },
-      child: widget.child,
-    );
+    if (!canPop) return widget.child;
 
-    if (!canPop) return content;
-
-    // Жест ловится с любой точки экрана.
     return GestureDetector(
       behavior: HitTestBehavior.translucent,
-      onHorizontalDragUpdate: _onDragUpdate,
-      onHorizontalDragEnd: _onDragEnd,
-      onHorizontalDragCancel: _onDragCancel,
-      child: content,
+      onHorizontalDragStart: (d) => _onDragStart(d, controller),
+      onHorizontalDragUpdate: (d) => _onDragUpdate(d, controller),
+      onHorizontalDragEnd: (d) => _onDragEnd(d, controller),
+      onHorizontalDragCancel: () => _onDragCancel(controller),
+      child: widget.child,
     );
   }
 }

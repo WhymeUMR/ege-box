@@ -1,10 +1,46 @@
 import 'package:ege_box/app.dart';
 import 'package:ege_box/core/constants/app_strings.dart';
+import 'package:ege_box/features/auth/data/auth_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 // Размер тестового экрана близкий к реальному телефону.
 const _phoneSize = Size(390, 844);
+
+/// Mock AuthService для тестов.
+class _MockAuthService extends ChangeNotifier implements AuthService {
+  @override
+  bool get isAuthenticated => false;
+
+  @override
+  AuthUser? get currentUser => null;
+
+  @override
+  String? get token => null;
+
+  @override
+  Future<void> login({required String email, required String password}) async {}
+
+  @override
+  Future<void> register({
+    required String name,
+    required String email,
+    required String password,
+    required String passwordRepeat,
+  }) async {}
+
+  @override
+  Future<void> logout() async {}
+
+  @override
+  bool get isOnboarded => false;
+
+  @override
+  Future<void> setGrade(int grade) async {}
+
+  @override
+  Future<void> setSubjects(List<String> subjects) async {}
+}
 
 Future<void> _setPhoneSurface(WidgetTester tester) async {
   await tester.binding.setSurfaceSize(_phoneSize);
@@ -18,10 +54,12 @@ Future<void> _setPhoneSurface(WidgetTester tester) async {
 }
 
 void main() {
-  testWidgets('Welcome screen shows typewriter tagline and auth buttons',
-      (tester) async {
+  testWidgets('Welcome screen shows typewriter tagline and auth buttons', (
+    tester,
+  ) async {
     await _setPhoneSurface(tester);
-    await tester.pumpWidget(const EgeBoxApp());
+    final authService = _MockAuthService();
+    await tester.pumpWidget(EgeBoxApp(authService: authService));
     // Дать анимациям выезда отыграть, плюс часть фразы напечататься.
     await tester.pump(const Duration(seconds: 2));
 
@@ -39,7 +77,8 @@ void main() {
 
   testWidgets('Tap "Войти" navigates to login', (tester) async {
     await _setPhoneSurface(tester);
-    await tester.pumpWidget(const EgeBoxApp());
+    final authService = _MockAuthService();
+    await tester.pumpWidget(EgeBoxApp(authService: authService));
     await tester.pump(const Duration(seconds: 2));
 
     await tester.tap(find.widgetWithText(ElevatedButton, AppStrings.signIn));

@@ -108,6 +108,7 @@ class _LoginPageState extends State<LoginPage> {
                     textInputAction: TextInputAction.done,
                     onSubmitted: (_) => _onSubmit(),
                     autofillHints: const [AutofillHints.password],
+                    maxLength: AuthService.passwordMaxLength,
                   ),
                   const SizedBox(height: 6),
                   Align(

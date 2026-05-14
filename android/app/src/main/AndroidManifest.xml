@@ -1,4 +1,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Нужен для загрузки иконок предметов из CDN (Image.network). -->
+    <uses-permission android:name="android.permission.INTERNET"/>
     <application
         android:label="Ege Box"
         android:name="${applicationName}"

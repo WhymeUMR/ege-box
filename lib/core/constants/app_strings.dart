@@ -35,6 +35,20 @@ class AppStrings {
   static const passwordRequirements =
       'Минимум 8 символов, буква, цифра и спецсимвол';
 
+  // Onboarding
+  static const onboardingStepClass = 'Шаг 1 из 3 — Класс';
+  static String onboardingClassTitle(String name) =>
+      '$name, в каком ты сейчас классе?';
+  static const onboardingClassSubtitle =
+      'Это нужно, чтобы я понимал, сколько у нас времени до экзамена и какие темы уже пройдены в школе.';
+  static const onboardingNext = 'Далее';
+  static const onboardingStepSubjects = 'Шаг 2 из 3 — Предметы';
+  static const onboardingSubjectsTitle = 'Какие предметы сдаёшь?';
+  static const onboardingSubjectsSubtitle =
+      'Отметь все предметы, которые сдаёшь (3–5).\nНажми ещё раз, чтобы снять отметку.';
+  static String onboardingSubjectsCounter(int selected, int min, int max) =>
+      'Выбрано $selected • нужно от $min до $max';
+
   // Forgot password
   static const forgotTitle = 'Забыли пароль?';
   static const forgotSubtitle =

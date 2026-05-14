@@ -21,6 +21,17 @@ class AuthService extends ChangeNotifier {
   static const _kToken = 'auth.token';
   static const _kCurrentEmail = 'auth.current_email';
 
+  /// Жёсткие лимиты длины — используются и в UI (input formatters),
+  /// и в серверной валидации.
+  static const nameMaxLength = 30;
+  static const passwordMaxLength = 64;
+
+  /// Признак завершённого онбординга (выбран класс и т.д.) — пока хватает
+  /// просто факта наличия `grade` у пользователя.
+  bool get isOnboarded =>
+      _currentUser?.grade != null &&
+      (_currentUser?.subjects.isNotEmpty ?? false);
+
   final SharedPreferences _prefs;
 
   String? _token;
@@ -65,10 +76,75 @@ class AuthService extends ChangeNotifier {
     final users = _readUsers();
     for (final u in users) {
       if (u.email == email.toLowerCase()) {
-        return AuthUser(email: u.email, name: u.name);
+        return AuthUser(
+          email: u.email,
+          name: u.name,
+          grade: u.grade,
+          subjects: u.subjects,
+        );
       }
     }
     return null;
+  }
+
+  /// Сохранить класс пользователя (9/10/11) — шаг онбординга.
+  Future<void> setGrade(int grade) async {
+    final user = _currentUser;
+    if (user == null) {
+      throw const AuthException('Нет активной сессии');
+    }
+    final users = _readUsers();
+    final idx = users.indexWhere((u) => u.email == user.email);
+    if (idx == -1) {
+      throw const AuthException('Пользователь не найден');
+    }
+    final old = users[idx];
+    users[idx] = _StoredUser(
+      email: old.email,
+      name: old.name,
+      salt: old.salt,
+      hash: old.hash,
+      grade: grade,
+      subjects: old.subjects,
+    );
+    await _writeUsers(users);
+    _currentUser = AuthUser(
+      email: user.email,
+      name: user.name,
+      grade: grade,
+      subjects: user.subjects,
+    );
+    notifyListeners();
+  }
+
+  /// Сохранить выбранные предметы ЕГЭ — шаг онбординга.
+  Future<void> setSubjects(List<String> subjects) async {
+    final user = _currentUser;
+    if (user == null) {
+      throw const AuthException('Нет активной сессии');
+    }
+    final users = _readUsers();
+    final idx = users.indexWhere((u) => u.email == user.email);
+    if (idx == -1) {
+      throw const AuthException('Пользователь не найден');
+    }
+    final old = users[idx];
+    users[idx] = _StoredUser(
+      email: old.email,
+      name: old.name,
+      salt: old.salt,
+      hash: old.hash,
+      grade: old.grade,
+      subjects: List.unmodifiable(subjects),
+    );
+    await _writeUsers(users);
+    _currentUser = AuthUser(
+      email: user.email,
+      name: user.name,
+      grade: user.grade,
+      subjects: List.unmodifiable(subjects),
+    );
+    notifyListeners();
   }
 
   /// Регистрация. Бросает [AuthException] с понятным сообщением при ошибке.
@@ -83,6 +159,14 @@ class AuthService extends ChangeNotifier {
 
     if (trimmedName.isEmpty) {
       throw const AuthException('Введите имя');
+    }
+    if (trimmedName.length > nameMaxLength) {
+      throw AuthException('Имя должно быть не длиннее $nameMaxLength символов');
+    }
+    if (password.length > passwordMaxLength) {
+      throw AuthException(
+        'Пароль должен быть не длиннее $passwordMaxLength символов',
+      );
     }
     if (normalizedEmail.isEmpty) {
       throw const AuthException('Введите почту');
@@ -152,7 +236,16 @@ class AuthService extends ChangeNotifier {
     await _prefs.setString(_kToken, token);
     await _prefs.setString(_kCurrentEmail, email);
     _token = token;
-    _currentUser = AuthUser(email: email, name: name);
+    final stored = _readUsers().firstWhere(
+      (u) => u.email == email,
+      orElse: () => _StoredUser(email: email, name: name, salt: '', hash: ''),
+    );
+    _currentUser = AuthUser(
+      email: email,
+      name: name,
+      grade: stored.grade,
+      subjects: stored.subjects,
+    );
     notifyListeners();
   }
 
@@ -195,9 +288,20 @@ class AuthService extends ChangeNotifier {
 }
 
 class AuthUser {
-  const AuthUser({required this.email, required this.name});
+  const AuthUser({
+    required this.email,
+    required this.name,
+    this.grade,
+    this.subjects = const [],
+  });
   final String email;
   final String name;
+
+  /// Школьный класс пользователя (9/10/11). `null`, пока не выбран в онбординге.
+  final int? grade;
+
+  /// Предметы ЕГЭ, выбранные на втором шаге онбординга. Пусто, пока не выбраны.
+  final List<String> subjects;
 }
 
 class AuthException implements Exception {
@@ -213,18 +317,24 @@ class _StoredUser {
     required this.name,
     required this.salt,
     required this.hash,
+    this.grade,
+    this.subjects = const [],
   });
 
   final String email;
   final String name;
   final String salt;
   final String hash;
+  final int? grade;
+  final List<String> subjects;
 
   Map<String, dynamic> toJson() => {
         'email': email,
         'name': name,
         'salt': salt,
         'hash': hash,
+        if (grade != null) 'grade': grade,
+        if (subjects.isNotEmpty) 'subjects': subjects,
       };
 
   factory _StoredUser.fromJson(Map<String, dynamic> json) => _StoredUser(
@@ -232,5 +342,10 @@ class _StoredUser {
         name: json['name'] as String,
         salt: json['salt'] as String,
         hash: json['hash'] as String,
+        grade: (json['grade'] as num?)?.toInt(),
+        subjects: (json['subjects'] as List?)
+                ?.map((e) => e as String)
+                .toList(growable: false) ??
+            const [],
       );
 }
