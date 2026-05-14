@@ -92,7 +92,7 @@ class _TypewriterTextState extends State<TypewriterText>
     final visible = phrase.substring(0, _charCount);
     return AnimatedBuilder(
       animation: _cursorController,
-      builder: (_, __) {
+      builder: (context, _) {
         final cursorVisible = _cursorController.value > 0.5;
         return Text(
           '$visible${cursorVisible ? widget.cursor : ' '}',

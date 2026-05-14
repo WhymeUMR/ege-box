@@ -13,4 +13,21 @@ class AppStrings {
   ];
   static const signIn = 'Войти';
   static const signUp = 'Зарегистрироваться';
+
+  // Auth forms
+  static const emailHint = 'Почта';
+  static const passwordHint = 'Пароль';
+  static const nameHint = 'Имя';
+  static const passwordRepeatHint = 'Повторите пароль';
+  static const signInWithTelegram = 'Войти через Telegram';
+  static const forgotPassword = 'Забыли пароль?';
+  static const or = 'или';
+
+  // Hero texts
+  static const loginTitle = 'С возвращением!';
+  static const loginSubtitle = 'Продолжим подготовку к экзаменам';
+  static const registerTitle = 'Создаём аккаунт';
+  static const registerSubtitle = 'Пара шагов — и ты с нами';
+  static const noAccountYet = 'Нет аккаунта? ';
+  static const alreadyHaveAccount = 'Уже есть аккаунт? ';
 }

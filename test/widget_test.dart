@@ -43,11 +43,13 @@ void main() {
     await tester.pump(const Duration(seconds: 2));
 
     await tester.tap(find.widgetWithText(ElevatedButton, AppStrings.signIn));
-    // Прокачиваем кадры, пока идёт переход маршрутизации.
-    for (var i = 0; i < 10; i++) {
+    // Прокачиваем кадры, пока welcome отыгрывает «уход» и грузится login.
+    for (var i = 0; i < 20; i++) {
       await tester.pump(const Duration(milliseconds: 200));
     }
 
-    expect(find.byType(AppBar), findsOneWidget);
+    // На login-экране есть поле "Почта" и заголовок-приветствие.
+    expect(find.text(AppStrings.loginTitle), findsOneWidget);
+    expect(find.text(AppStrings.emailHint), findsOneWidget);
   });
 }

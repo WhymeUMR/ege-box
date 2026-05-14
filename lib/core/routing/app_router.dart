@@ -34,8 +34,8 @@ class AppRouter {
       settings: settings,
       transitionDuration: const Duration(milliseconds: 350),
       reverseTransitionDuration: const Duration(milliseconds: 250),
-      pageBuilder: (_, __, ___) => page,
-      transitionsBuilder: (_, animation, __, child) =>
+      pageBuilder: (context, animation, secondaryAnimation) => page,
+      transitionsBuilder: (context, animation, secondaryAnimation, child) =>
           FadeTransition(opacity: animation, child: child),
     );
   }
