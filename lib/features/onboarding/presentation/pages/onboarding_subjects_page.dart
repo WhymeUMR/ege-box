@@ -27,13 +27,17 @@ class _OnboardingSubjectsPageState extends State<OnboardingSubjectsPage> {
   void initState() {
     super.initState();
     // Если пользователь возвращается на шаг — подтянем уже сохранённый выбор.
-    final existing = context.read<AuthService>().currentUser?.subjects ?? const [];
+    final existing =
+        context.read<AuthService>().currentUser?.subjects ?? const [];
     _selected.addAll(existing);
   }
 
   /// Профильная и базовая математика взаимоисключают друг друга — при
   /// выборе одной автоматически снимаем другую.
-  static const _mathExclusive = {'math_prof': 'math_base', 'math_base': 'math_prof'};
+  static const _mathExclusive = {
+    'math_prof': 'math_base',
+    'math_base': 'math_prof',
+  };
 
   void _toggle(String id) {
     setState(() {
@@ -79,11 +83,8 @@ class _OnboardingSubjectsPageState extends State<OnboardingSubjectsPage> {
           .toList(growable: false);
       await context.read<AuthService>().setSubjects(ordered);
       if (!mounted) return;
-      // TODO: следующий шаг 3 — пока ведём на home.
-      Navigator.of(context).pushNamedAndRemoveUntil(
-        AppRouter.home,
-        (_) => false,
-      );
+      // push (а не replace), чтобы со 3-го шага свайп вёл на 2-й.
+      Navigator.of(context).pushNamed(AppRouter.onboardingHours);
     } on AuthException catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context)
@@ -102,7 +103,7 @@ class _OnboardingSubjectsPageState extends State<OnboardingSubjectsPage> {
       child: Scaffold(
         body: SafeArea(
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(24, 16, 24, 16),
+            padding: const EdgeInsets.fromLTRB(24, 16, 24, 8),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
@@ -144,8 +145,7 @@ class _OnboardingSubjectsPageState extends State<OnboardingSubjectsPage> {
                       final s = egeSubjects[i];
                       return SubjectChip(
                         title: s.title,
-                        iconUrl: s.iconUrl,
-                        emoji: s.emoji,
+                        iconAsset: s.iconAsset,
                         selected: _selected.contains(s.id),
                         disabled: atMax,
                         onTap: () => _toggle(s.id),

@@ -4,21 +4,19 @@ import '../../../../core/theme/app_colors.dart';
 
 /// Строка-карточка предмета ЕГЭ для вертикального списка.
 /// В выбранном состоянии заливается primary, в обычном — светлый фон с обводкой.
-/// Иконка тянется по сети ([iconUrl]); если не загрузилась — показывается [emoji].
+/// Иконка [iconAsset] лежит локально в `assets/subjects/` (офлайн).
 class SubjectChip extends StatelessWidget {
   const SubjectChip({
     super.key,
     required this.title,
     required this.selected,
     required this.onTap,
-    required this.iconUrl,
-    this.emoji,
+    required this.iconAsset,
     this.disabled = false,
   });
 
   final String title;
-  final String iconUrl;
-  final String? emoji;
+  final String iconAsset;
   final bool selected;
   final bool disabled;
   final VoidCallback onTap;
@@ -53,12 +51,20 @@ class SubjectChip extends StatelessWidget {
                   const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
               child: Row(
                 children: [
-                  _Icon(
-                    url: iconUrl,
-                    emojiFallback: emoji,
-                    background: selected
-                        ? AppColors.background
-                        : AppColors.background,
+                  Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: AppColors.background,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    alignment: Alignment.center,
+                    child: Image.asset(
+                      iconAsset,
+                      width: 28,
+                      height: 28,
+                      fit: BoxFit.contain,
+                    ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
@@ -107,52 +113,4 @@ class SubjectChip extends StatelessWidget {
   }
 }
 
-class _Icon extends StatelessWidget {
-  const _Icon({
-    required this.url,
-    required this.emojiFallback,
-    required this.background,
-  });
 
-  final String url;
-  final String? emojiFallback;
-  final Color background;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 40,
-      height: 40,
-      decoration: BoxDecoration(
-        color: background,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      alignment: Alignment.center,
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(8),
-        child: Image.network(
-          url,
-          width: 28,
-          height: 28,
-          fit: BoxFit.contain,
-          gaplessPlayback: true,
-          loadingBuilder: (context, child, progress) {
-            if (progress == null) return child;
-            return SizedBox(
-              width: 20,
-              height: 20,
-              child: CircularProgressIndicator(
-                strokeWidth: 2,
-                color: AppColors.text.withValues(alpha: 0.4),
-              ),
-            );
-          },
-          errorBuilder: (context, _, _) => Text(
-            emojiFallback ?? '📚',
-            style: const TextStyle(fontSize: 22),
-          ),
-        ),
-      ),
-    );
-  }
-}

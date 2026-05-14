@@ -6,107 +6,92 @@ class EgeSubject {
   const EgeSubject({
     required this.id,
     required this.title,
-    required this.iconUrl,
-    this.emoji,
+    required this.iconAsset,
   });
 
   /// Стабильный идентификатор для хранения (не зависит от перевода UI).
   final String id;
   final String title;
 
-  /// PNG-иконка из CDN icons8 (color, 96px). Подгружается сетью с
-  /// фолбэком на [emoji], если интернет недоступен.
-  final String iconUrl;
-  final String? emoji;
+  /// Путь к локальному PNG-ассету (Twemoji 72×72) в `assets/subjects/`.
+  /// Лежит в репозитории и собирается в бандл — работает офлайн.
+  final String iconAsset;
 }
 
-// Единый CDN для всех иконок — OpenMoji (color, 72×72 PNG). Все эмодзи
-// гарантированно отдают валидный PNG, поэтому одинаково стабильно
-// работают и проф. математика, и история, и т.д.
+// Все 12 иконок — Twemoji 72×72, скачаны в `assets/subjects/`. Чтобы
+// добавить новую — положи PNG туда же и сошлись через `assets/subjects/<code>.png`.
 const egeSubjects = <EgeSubject>[
   EgeSubject(
     id: 'rus',
     title: 'Русский язык',
     // 📕 closed book
-    iconUrl: 'https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/72x72/1f4d5.png',
-    emoji: '📕',
+    iconAsset: 'assets/subjects/1f4d5.png',
   ),
   EgeSubject(
     id: 'math_prof',
     title: 'Математика (проф.)',
     // 📐 triangular ruler
-    iconUrl: 'https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/72x72/1f4d0.png',
-    emoji: '📐',
+    iconAsset: 'assets/subjects/1f4d0.png',
   ),
   EgeSubject(
     id: 'math_base',
     title: 'Математика (база)',
     // 🧮 abacus
-    iconUrl: 'https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/72x72/1f9ee.png',
-    emoji: '🧮',
+    iconAsset: 'assets/subjects/1f9ee.png',
   ),
   EgeSubject(
     id: 'physics',
     title: 'Физика',
     // ⚛ atom symbol
-    iconUrl: 'https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/72x72/269b.png',
-    emoji: '⚛️',
+    iconAsset: 'assets/subjects/269b.png',
   ),
   EgeSubject(
     id: 'chemistry',
     title: 'Химия',
     // 🧪 test tube
-    iconUrl: 'https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/72x72/1f9ea.png',
-    emoji: '🧪',
+    iconAsset: 'assets/subjects/1f9ea.png',
   ),
   EgeSubject(
     id: 'biology',
     title: 'Биология',
     // 🧬 dna
-    iconUrl: 'https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/72x72/1f9ec.png',
-    emoji: '🧬',
+    iconAsset: 'assets/subjects/1f9ec.png',
   ),
   EgeSubject(
     id: 'history',
     title: 'История',
     // 🏛 classical building
-    iconUrl: 'https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/72x72/1f3db.png',
-    emoji: '🏛️',
+    iconAsset: 'assets/subjects/1f3db.png',
   ),
   EgeSubject(
     id: 'social',
     title: 'Обществознание',
     // ⚖ scales
-    iconUrl: 'https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/72x72/2696.png',
-    emoji: '⚖️',
+    iconAsset: 'assets/subjects/2696.png',
   ),
   EgeSubject(
     id: 'literature',
     title: 'Литература',
     // 📖 open book
-    iconUrl: 'https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/72x72/1f4d6.png',
-    emoji: '📖',
+    iconAsset: 'assets/subjects/1f4d6.png',
   ),
   EgeSubject(
     id: 'geography',
     title: 'География',
     // 🌍 globe (Europe-Africa)
-    iconUrl: 'https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/72x72/1f30d.png',
-    emoji: '🌍',
+    iconAsset: 'assets/subjects/1f30d.png',
   ),
   EgeSubject(
     id: 'informatics',
     title: 'Информатика',
     // 💻 laptop
-    iconUrl: 'https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/72x72/1f4bb.png',
-    emoji: '💻',
+    iconAsset: 'assets/subjects/1f4bb.png',
   ),
   EgeSubject(
     id: 'english',
     title: 'Английский язык',
     // 🇬🇧 flag UK (composite codepoint)
-    iconUrl: 'https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/72x72/1f1ec-1f1e7.png',
-    emoji: '🇬🇧',
+    iconAsset: 'assets/subjects/1f1ec-1f1e7.png',
   ),
 ];
 

@@ -46,6 +46,13 @@ class EgeBoxApp extends StatelessWidget {
     if (user.subjects.isEmpty) {
       return [AppRouter.onboardingClass, AppRouter.onboardingSubjects];
     }
+    if (user.weeklyHours == null) {
+      return [
+        AppRouter.onboardingClass,
+        AppRouter.onboardingSubjects,
+        AppRouter.onboardingHours,
+      ];
+    }
     return [AppRouter.home];
   }
 }

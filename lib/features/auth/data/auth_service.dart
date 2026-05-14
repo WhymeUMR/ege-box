@@ -30,7 +30,8 @@ class AuthService extends ChangeNotifier {
   /// просто факта наличия `grade` у пользователя.
   bool get isOnboarded =>
       _currentUser?.grade != null &&
-      (_currentUser?.subjects.isNotEmpty ?? false);
+      (_currentUser?.subjects.isNotEmpty ?? false) &&
+      _currentUser?.weeklyHours != null;
 
   final SharedPreferences _prefs;
 
@@ -81,6 +82,7 @@ class AuthService extends ChangeNotifier {
           name: u.name,
           grade: u.grade,
           subjects: u.subjects,
+          weeklyHours: u.weeklyHours,
         );
       }
     }
@@ -106,6 +108,7 @@ class AuthService extends ChangeNotifier {
       hash: old.hash,
       grade: grade,
       subjects: old.subjects,
+      weeklyHours: old.weeklyHours,
     );
     await _writeUsers(users);
     _currentUser = AuthUser(
@@ -113,6 +116,39 @@ class AuthService extends ChangeNotifier {
       name: user.name,
       grade: grade,
       subjects: user.subjects,
+      weeklyHours: user.weeklyHours,
+    );
+    notifyListeners();
+  }
+
+  /// Сохранить недельную нагрузку — финальный шаг онбординга.
+  Future<void> setWeeklyHours(int hours) async {
+    final user = _currentUser;
+    if (user == null) {
+      throw const AuthException('Нет активной сессии');
+    }
+    final users = _readUsers();
+    final idx = users.indexWhere((u) => u.email == user.email);
+    if (idx == -1) {
+      throw const AuthException('Пользователь не найден');
+    }
+    final old = users[idx];
+    users[idx] = _StoredUser(
+      email: old.email,
+      name: old.name,
+      salt: old.salt,
+      hash: old.hash,
+      grade: old.grade,
+      subjects: old.subjects,
+      weeklyHours: hours,
+    );
+    await _writeUsers(users);
+    _currentUser = AuthUser(
+      email: user.email,
+      name: user.name,
+      grade: user.grade,
+      subjects: user.subjects,
+      weeklyHours: hours,
     );
     notifyListeners();
   }
@@ -136,6 +172,7 @@ class AuthService extends ChangeNotifier {
       hash: old.hash,
       grade: old.grade,
       subjects: List.unmodifiable(subjects),
+      weeklyHours: old.weeklyHours,
     );
     await _writeUsers(users);
     _currentUser = AuthUser(
@@ -143,6 +180,7 @@ class AuthService extends ChangeNotifier {
       name: user.name,
       grade: user.grade,
       subjects: List.unmodifiable(subjects),
+      weeklyHours: user.weeklyHours,
     );
     notifyListeners();
   }
@@ -245,6 +283,7 @@ class AuthService extends ChangeNotifier {
       name: name,
       grade: stored.grade,
       subjects: stored.subjects,
+      weeklyHours: stored.weeklyHours,
     );
     notifyListeners();
   }
@@ -293,6 +332,7 @@ class AuthUser {
     required this.name,
     this.grade,
     this.subjects = const [],
+    this.weeklyHours,
   });
   final String email;
   final String name;
@@ -302,6 +342,10 @@ class AuthUser {
 
   /// Предметы ЕГЭ, выбранные на втором шаге онбординга. Пусто, пока не выбраны.
   final List<String> subjects;
+
+  /// Сколько часов в неделю пользователь готов уделять подготовке.
+  /// `null`, пока не задано.
+  final int? weeklyHours;
 }
 
 class AuthException implements Exception {
@@ -319,6 +363,7 @@ class _StoredUser {
     required this.hash,
     this.grade,
     this.subjects = const [],
+    this.weeklyHours,
   });
 
   final String email;
@@ -327,6 +372,7 @@ class _StoredUser {
   final String hash;
   final int? grade;
   final List<String> subjects;
+  final int? weeklyHours;
 
   Map<String, dynamic> toJson() => {
         'email': email,
@@ -335,6 +381,7 @@ class _StoredUser {
         'hash': hash,
         if (grade != null) 'grade': grade,
         if (subjects.isNotEmpty) 'subjects': subjects,
+        if (weeklyHours != null) 'weeklyHours': weeklyHours,
       };
 
   factory _StoredUser.fromJson(Map<String, dynamic> json) => _StoredUser(
@@ -347,5 +394,6 @@ class _StoredUser {
                 ?.map((e) => e as String)
                 .toList(growable: false) ??
             const [],
+        weeklyHours: (json['weeklyHours'] as num?)?.toInt(),
       );
 }

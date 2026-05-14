@@ -5,6 +5,7 @@ import '../../features/auth/presentation/pages/login_page.dart';
 import '../../features/auth/presentation/pages/register_page.dart';
 import '../../features/home/presentation/pages/home_page.dart';
 import '../../features/onboarding/presentation/pages/onboarding_class_page.dart';
+import '../../features/onboarding/presentation/pages/onboarding_hours_page.dart';
 import '../../features/onboarding/presentation/pages/onboarding_subjects_page.dart';
 import '../../features/welcome/presentation/pages/welcome_page.dart';
 
@@ -18,6 +19,7 @@ class AppRouter {
   static const home = '/home';
   static const onboardingClass = '/onboarding/class';
   static const onboardingSubjects = '/onboarding/subjects';
+  static const onboardingHours = '/onboarding/hours';
 
   static Route<dynamic> onGenerateRoute(RouteSettings settings) {
     switch (settings.name) {
@@ -33,6 +35,8 @@ class AppRouter {
         return _slideRoute(const OnboardingClassPage(), settings);
       case onboardingSubjects:
         return _slideRoute(const OnboardingSubjectsPage(), settings);
+      case onboardingHours:
+        return _slideRoute(const OnboardingHoursPage(), settings);
       case welcome:
       default:
         return MaterialPageRoute(

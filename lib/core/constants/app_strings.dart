@@ -48,6 +48,12 @@ class AppStrings {
       'Отметь все предметы, которые сдаёшь (3–5).\nНажми ещё раз, чтобы снять отметку.';
   static String onboardingSubjectsCounter(int selected, int min, int max) =>
       'Выбрано $selected • нужно от $min до $max';
+  static const onboardingStepHours = 'Шаг 3 из 3 — Время на подготовку';
+  static String onboardingHoursTitle(String name) =>
+      '$name, сколько часов в неделю ты готов уделять подготовке?';
+  static const onboardingHoursSubtitle =
+      'От этого зависит, сколько задач я буду давать в день (в среднем ~17 минут на одну).';
+  static const onboardingFinish = 'Готово';
 
   // Forgot password
   static const forgotTitle = 'Забыли пароль?';

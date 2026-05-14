@@ -64,6 +64,7 @@ flutter:
 
   assets:
     - assets/
+    - assets/subjects/
 
   fonts:
     - family: SpaceGrotesk
