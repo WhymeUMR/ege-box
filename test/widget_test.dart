@@ -43,6 +43,12 @@ class _MockAuthService extends ChangeNotifier implements AuthService {
 
   @override
   Future<void> setWeeklyHours(int hours) async {}
+
+  @override
+  Future<void> setMockExamScore({
+    required String subjectId,
+    required int score,
+  }) async {}
 }
 
 Future<void> _setPhoneSurface(WidgetTester tester) async {

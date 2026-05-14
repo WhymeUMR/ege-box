@@ -39,9 +39,7 @@ class _OnboardingHoursPageState extends State<OnboardingHoursPage> {
     try {
       await context.read<AuthService>().setWeeklyHours(_hours);
       if (!mounted) return;
-      Navigator.of(
-        context,
-      ).pushNamedAndRemoveUntil(AppRouter.home, (_) => false);
+      Navigator.of(context).pushNamed(AppRouter.onboardingMock);
     } on AuthException catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context)

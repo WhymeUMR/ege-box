@@ -83,6 +83,7 @@ class AuthService extends ChangeNotifier {
           grade: u.grade,
           subjects: u.subjects,
           weeklyHours: u.weeklyHours,
+          mockExamScores: u.mockExamScores,
         );
       }
     }
@@ -109,6 +110,7 @@ class AuthService extends ChangeNotifier {
       grade: grade,
       subjects: old.subjects,
       weeklyHours: old.weeklyHours,
+      mockExamScores: old.mockExamScores,
     );
     await _writeUsers(users);
     _currentUser = AuthUser(
@@ -117,6 +119,7 @@ class AuthService extends ChangeNotifier {
       grade: grade,
       subjects: user.subjects,
       weeklyHours: user.weeklyHours,
+      mockExamScores: user.mockExamScores,
     );
     notifyListeners();
   }
@@ -141,6 +144,7 @@ class AuthService extends ChangeNotifier {
       grade: old.grade,
       subjects: old.subjects,
       weeklyHours: hours,
+      mockExamScores: old.mockExamScores,
     );
     await _writeUsers(users);
     _currentUser = AuthUser(
@@ -149,6 +153,48 @@ class AuthService extends ChangeNotifier {
       grade: user.grade,
       subjects: user.subjects,
       weeklyHours: hours,
+      mockExamScores: user.mockExamScores,
+    );
+    notifyListeners();
+  }
+
+  /// Сохранить балл пробника по предмету.
+  Future<void> setMockExamScore({
+    required String subjectId,
+    required int score,
+  }) async {
+    final user = _currentUser;
+    if (user == null) {
+      throw const AuthException('Нет активной сессии');
+    }
+    final users = _readUsers();
+    final idx = users.indexWhere((u) => u.email == user.email);
+    if (idx == -1) {
+      throw const AuthException('Пользователь не найден');
+    }
+    final old = users[idx];
+    final nextScores = <String, int>{
+      ...old.mockExamScores,
+      subjectId: score.clamp(0, 100),
+    };
+    users[idx] = _StoredUser(
+      email: old.email,
+      name: old.name,
+      salt: old.salt,
+      hash: old.hash,
+      grade: old.grade,
+      subjects: old.subjects,
+      weeklyHours: old.weeklyHours,
+      mockExamScores: Map.unmodifiable(nextScores),
+    );
+    await _writeUsers(users);
+    _currentUser = AuthUser(
+      email: user.email,
+      name: user.name,
+      grade: user.grade,
+      subjects: user.subjects,
+      weeklyHours: user.weeklyHours,
+      mockExamScores: Map.unmodifiable(nextScores),
     );
     notifyListeners();
   }
@@ -173,6 +219,7 @@ class AuthService extends ChangeNotifier {
       grade: old.grade,
       subjects: List.unmodifiable(subjects),
       weeklyHours: old.weeklyHours,
+      mockExamScores: old.mockExamScores,
     );
     await _writeUsers(users);
     _currentUser = AuthUser(
@@ -181,6 +228,7 @@ class AuthService extends ChangeNotifier {
       grade: user.grade,
       subjects: List.unmodifiable(subjects),
       weeklyHours: user.weeklyHours,
+      mockExamScores: user.mockExamScores,
     );
     notifyListeners();
   }
@@ -224,32 +272,31 @@ class AuthService extends ChangeNotifier {
 
     final salt = _generateSalt();
     final hash = _hashPassword(password, salt);
-    users.add(_StoredUser(
-      email: normalizedEmail,
-      name: trimmedName,
-      salt: salt,
-      hash: hash,
-    ));
+    users.add(
+      _StoredUser(
+        email: normalizedEmail,
+        name: trimmedName,
+        salt: salt,
+        hash: hash,
+      ),
+    );
     await _writeUsers(users);
 
     await _startSession(normalizedEmail, trimmedName);
   }
 
   /// Логин по email/паролю.
-  Future<void> login({
-    required String email,
-    required String password,
-  }) async {
+  Future<void> login({required String email, required String password}) async {
     final normalizedEmail = email.trim().toLowerCase();
     if (normalizedEmail.isEmpty || password.isEmpty) {
       throw const AuthException('Введите почту и пароль');
     }
 
     final users = _readUsers();
-    final user = users.where((u) => u.email == normalizedEmail).cast<_StoredUser?>().firstWhere(
-          (_) => true,
-          orElse: () => null,
-        );
+    final user = users
+        .where((u) => u.email == normalizedEmail)
+        .cast<_StoredUser?>()
+        .firstWhere((_) => true, orElse: () => null);
     if (user == null) {
       throw const AuthException('Неверная почта или пароль');
     }
@@ -284,6 +331,7 @@ class AuthService extends ChangeNotifier {
       grade: stored.grade,
       subjects: stored.subjects,
       weeklyHours: stored.weeklyHours,
+      mockExamScores: stored.mockExamScores,
     );
     notifyListeners();
   }
@@ -333,6 +381,7 @@ class AuthUser {
     this.grade,
     this.subjects = const [],
     this.weeklyHours,
+    this.mockExamScores = const {},
   });
   final String email;
   final String name;
@@ -346,6 +395,9 @@ class AuthUser {
   /// Сколько часов в неделю пользователь готов уделять подготовке.
   /// `null`, пока не задано.
   final int? weeklyHours;
+
+  /// Баллы пробников по предметам, ключ — id предмета.
+  final Map<String, int> mockExamScores;
 }
 
 class AuthException implements Exception {
@@ -364,6 +416,7 @@ class _StoredUser {
     this.grade,
     this.subjects = const [],
     this.weeklyHours,
+    this.mockExamScores = const {},
   });
 
   final String email;
@@ -373,27 +426,35 @@ class _StoredUser {
   final int? grade;
   final List<String> subjects;
   final int? weeklyHours;
+  final Map<String, int> mockExamScores;
 
   Map<String, dynamic> toJson() => {
-        'email': email,
-        'name': name,
-        'salt': salt,
-        'hash': hash,
-        if (grade != null) 'grade': grade,
-        if (subjects.isNotEmpty) 'subjects': subjects,
-        if (weeklyHours != null) 'weeklyHours': weeklyHours,
-      };
+    'email': email,
+    'name': name,
+    'salt': salt,
+    'hash': hash,
+    if (grade != null) 'grade': grade,
+    if (subjects.isNotEmpty) 'subjects': subjects,
+    if (weeklyHours != null) 'weeklyHours': weeklyHours,
+    if (mockExamScores.isNotEmpty) 'mockExamScores': mockExamScores,
+  };
 
   factory _StoredUser.fromJson(Map<String, dynamic> json) => _StoredUser(
-        email: json['email'] as String,
-        name: json['name'] as String,
-        salt: json['salt'] as String,
-        hash: json['hash'] as String,
-        grade: (json['grade'] as num?)?.toInt(),
-        subjects: (json['subjects'] as List?)
-                ?.map((e) => e as String)
-                .toList(growable: false) ??
-            const [],
-        weeklyHours: (json['weeklyHours'] as num?)?.toInt(),
-      );
+    email: json['email'] as String,
+    name: json['name'] as String,
+    salt: json['salt'] as String,
+    hash: json['hash'] as String,
+    grade: (json['grade'] as num?)?.toInt(),
+    subjects:
+        (json['subjects'] as List?)
+            ?.map((e) => e as String)
+            .toList(growable: false) ??
+        const [],
+    weeklyHours: (json['weeklyHours'] as num?)?.toInt(),
+    mockExamScores:
+        (json['mockExamScores'] as Map<String, dynamic>?)?.map(
+          (k, v) => MapEntry(k, (v as num).toInt()),
+        ) ??
+        const {},
+  );
 }

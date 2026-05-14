@@ -54,6 +54,14 @@ class AppStrings {
   static const onboardingHoursSubtitle =
       'От этого зависит, сколько задач я буду давать в день (в среднем ~17 минут на одну).';
   static const onboardingFinish = 'Готово';
+  static const onboardingMockTitle = 'Самое время написать пробник';
+  static String onboardingMockBody(String name) =>
+      '$name, если хочешь, можешь прямо сейчас написать пробник по одному из выбранных предметов. Это поможет точнее подобрать сложность задач и заодно познакомиться с платформой.';
+  static const onboardingMockHint =
+      'После каждого пробника ты вернёшься на этот экран с обновлённым баллом и сможешь пройти следующий предмет.';
+  static const onboardingMockChoose = 'Выбери предмет для пробника';
+  static const onboardingMockStart = 'Приступить';
+  static const onboardingMockSkip = 'Пропустить';
 
   // Forgot password
   static const forgotTitle = 'Забыли пароль?';
