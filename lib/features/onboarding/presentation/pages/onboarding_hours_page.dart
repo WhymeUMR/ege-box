@@ -39,10 +39,9 @@ class _OnboardingHoursPageState extends State<OnboardingHoursPage> {
     try {
       await context.read<AuthService>().setWeeklyHours(_hours);
       if (!mounted) return;
-      Navigator.of(context).pushNamedAndRemoveUntil(
-        AppRouter.home,
-        (_) => false,
-      );
+      Navigator.of(
+        context,
+      ).pushNamedAndRemoveUntil(AppRouter.home, (_) => false);
     } on AuthException catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context)
@@ -102,11 +101,9 @@ class _OnboardingHoursPageState extends State<OnboardingHoursPage> {
                 SliderTheme(
                   data: SliderTheme.of(context).copyWith(
                     activeTrackColor: AppColors.primary,
-                    inactiveTrackColor:
-                        AppColors.text.withValues(alpha: 0.12),
+                    inactiveTrackColor: AppColors.text.withValues(alpha: 0.12),
                     thumbColor: AppColors.primary,
-                    overlayColor:
-                        AppColors.primary.withValues(alpha: 0.15),
+                    overlayColor: AppColors.primary.withValues(alpha: 0.15),
                     trackHeight: 6,
                     thumbShape: const RoundSliderThumbShape(
                       enabledThumbRadius: 12,
@@ -198,10 +195,7 @@ class _HoursReadout extends StatelessWidget {
               ),
               const TextSpan(
                 text: '  ч/нед',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w600,
-                ),
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
               ),
             ],
           ),
