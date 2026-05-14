@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import '../../../../core/constants/app_strings.dart';
 import '../../../../core/routing/app_router.dart';
@@ -6,6 +7,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../shared/widgets/pill_button.dart';
 import '../../../../shared/widgets/pill_text_field.dart';
 import '../../../../shared/widgets/swipe_back.dart';
+import '../../data/auth_service.dart';
 import '../widgets/auth_hero.dart';
 import '../widgets/or_divider.dart';
 import '../widgets/switch_auth_link.dart';
@@ -28,9 +30,30 @@ class _LoginPageState extends State<LoginPage> {
     super.dispose();
   }
 
-  void _onSubmit() {
+  bool _busy = false;
+
+  Future<void> _onSubmit() async {
+    if (_busy) return;
     FocusScope.of(context).unfocus();
-    // TODO: реальный вход.
+    setState(() => _busy = true);
+    try {
+      await context.read<AuthService>().login(
+            email: _emailCtrl.text,
+            password: _passwordCtrl.text,
+          );
+      if (!mounted) return;
+      Navigator.of(context).pushNamedAndRemoveUntil(
+        AppRouter.home,
+        (_) => false,
+      );
+    } on AuthException catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(SnackBar(content: Text(e.message)));
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
   }
 
   void _onTelegram() {
@@ -38,7 +61,7 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   void _onForgot() {
-    // TODO: восстановление пароля.
+    Navigator.of(context).pushNamed(AppRouter.forgotPassword);
   }
 
   void _toRegister() {

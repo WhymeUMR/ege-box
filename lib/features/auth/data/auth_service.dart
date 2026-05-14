@@ -1,0 +1,236 @@
+import 'dart:convert';
+import 'dart:math';
+
+import 'package:crypto/crypto.dart';
+import 'package:flutter/foundation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+/// Простая локальная авторизация поверх SharedPreferences.
+///
+/// Хранит:
+/// - `auth.users` — JSON-массив зарегистрированных пользователей
+///   ({email, name, salt, hash}).
+/// - `auth.token` — текущий токен сессии.
+/// - `auth.current_email` — email авторизованного пользователя.
+class AuthService extends ChangeNotifier {
+  AuthService._(this._prefs) {
+    _restore();
+  }
+
+  static const _kUsers = 'auth.users';
+  static const _kToken = 'auth.token';
+  static const _kCurrentEmail = 'auth.current_email';
+
+  final SharedPreferences _prefs;
+
+  String? _token;
+  AuthUser? _currentUser;
+
+  bool get isAuthenticated => _token != null && _currentUser != null;
+  String? get token => _token;
+  AuthUser? get currentUser => _currentUser;
+
+  static Future<AuthService> create() async {
+    final prefs = await SharedPreferences.getInstance();
+    return AuthService._(prefs);
+  }
+
+  void _restore() {
+    final token = _prefs.getString(_kToken);
+    final email = _prefs.getString(_kCurrentEmail);
+    if (token == null || email == null) return;
+    final user = _findUser(email);
+    if (user == null) return;
+    _token = token;
+    _currentUser = user;
+  }
+
+  List<_StoredUser> _readUsers() {
+    final raw = _prefs.getString(_kUsers);
+    if (raw == null || raw.isEmpty) return [];
+    final list = jsonDecode(raw) as List<dynamic>;
+    return list
+        .map((e) => _StoredUser.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
+  Future<void> _writeUsers(List<_StoredUser> users) async {
+    await _prefs.setString(
+      _kUsers,
+      jsonEncode(users.map((u) => u.toJson()).toList()),
+    );
+  }
+
+  AuthUser? _findUser(String email) {
+    final users = _readUsers();
+    for (final u in users) {
+      if (u.email == email.toLowerCase()) {
+        return AuthUser(email: u.email, name: u.name);
+      }
+    }
+    return null;
+  }
+
+  /// Регистрация. Бросает [AuthException] с понятным сообщением при ошибке.
+  Future<void> register({
+    required String name,
+    required String email,
+    required String password,
+    required String passwordRepeat,
+  }) async {
+    final trimmedName = name.trim();
+    final normalizedEmail = email.trim().toLowerCase();
+
+    if (trimmedName.isEmpty) {
+      throw const AuthException('Введите имя');
+    }
+    if (normalizedEmail.isEmpty) {
+      throw const AuthException('Введите почту');
+    }
+    if (password != passwordRepeat) {
+      throw const AuthException('Пароли не совпадают');
+    }
+    final passwordError = validatePassword(password);
+    if (passwordError != null) {
+      throw AuthException(passwordError);
+    }
+
+    final users = _readUsers();
+    if (users.any((u) => u.email == normalizedEmail)) {
+      throw const AuthException('Пользователь с такой почтой уже есть');
+    }
+
+    final salt = _generateSalt();
+    final hash = _hashPassword(password, salt);
+    users.add(_StoredUser(
+      email: normalizedEmail,
+      name: trimmedName,
+      salt: salt,
+      hash: hash,
+    ));
+    await _writeUsers(users);
+
+    await _startSession(normalizedEmail, trimmedName);
+  }
+
+  /// Логин по email/паролю.
+  Future<void> login({
+    required String email,
+    required String password,
+  }) async {
+    final normalizedEmail = email.trim().toLowerCase();
+    if (normalizedEmail.isEmpty || password.isEmpty) {
+      throw const AuthException('Введите почту и пароль');
+    }
+
+    final users = _readUsers();
+    final user = users.where((u) => u.email == normalizedEmail).cast<_StoredUser?>().firstWhere(
+          (_) => true,
+          orElse: () => null,
+        );
+    if (user == null) {
+      throw const AuthException('Неверная почта или пароль');
+    }
+    final hash = _hashPassword(password, user.salt);
+    if (hash != user.hash) {
+      throw const AuthException('Неверная почта или пароль');
+    }
+
+    await _startSession(user.email, user.name);
+  }
+
+  Future<void> logout() async {
+    _token = null;
+    _currentUser = null;
+    await _prefs.remove(_kToken);
+    await _prefs.remove(_kCurrentEmail);
+    notifyListeners();
+  }
+
+  Future<void> _startSession(String email, String name) async {
+    final token = _generateToken();
+    await _prefs.setString(_kToken, token);
+    await _prefs.setString(_kCurrentEmail, email);
+    _token = token;
+    _currentUser = AuthUser(email: email, name: name);
+    notifyListeners();
+  }
+
+  // ----- helpers -----
+
+  static String _generateSalt() {
+    final r = Random.secure();
+    final bytes = List<int>.generate(16, (_) => r.nextInt(256));
+    return base64UrlEncode(bytes);
+  }
+
+  static String _generateToken() {
+    final r = Random.secure();
+    final bytes = List<int>.generate(32, (_) => r.nextInt(256));
+    return base64UrlEncode(bytes);
+  }
+
+  static String _hashPassword(String password, String salt) {
+    final bytes = utf8.encode('$salt::$password');
+    return sha256.convert(bytes).toString();
+  }
+
+  /// Валидация пароля. Возвращает текст ошибки или `null`, если всё ок.
+  /// Требования: ≥8 символов, минимум одна буква, одна цифра и один спецсимвол.
+  static String? validatePassword(String password) {
+    if (password.length < 8) {
+      return 'Пароль должен быть не короче 8 символов';
+    }
+    if (!RegExp(r'[A-Za-zА-Яа-яЁё]').hasMatch(password)) {
+      return 'Пароль должен содержать хотя бы одну букву';
+    }
+    if (!RegExp(r'\d').hasMatch(password)) {
+      return 'Пароль должен содержать хотя бы одну цифру';
+    }
+    if (!RegExp(r'[!@#\$%^&*(),.?":{}|<>_\-+=\[\]/\\;`~]').hasMatch(password)) {
+      return 'Пароль должен содержать хотя бы один спецсимвол';
+    }
+    return null;
+  }
+}
+
+class AuthUser {
+  const AuthUser({required this.email, required this.name});
+  final String email;
+  final String name;
+}
+
+class AuthException implements Exception {
+  const AuthException(this.message);
+  final String message;
+  @override
+  String toString() => message;
+}
+
+class _StoredUser {
+  _StoredUser({
+    required this.email,
+    required this.name,
+    required this.salt,
+    required this.hash,
+  });
+
+  final String email;
+  final String name;
+  final String salt;
+  final String hash;
+
+  Map<String, dynamic> toJson() => {
+        'email': email,
+        'name': name,
+        'salt': salt,
+        'hash': hash,
+      };
+
+  factory _StoredUser.fromJson(Map<String, dynamic> json) => _StoredUser(
+        email: json['email'] as String,
+        name: json['name'] as String,
+        salt: json['salt'] as String,
+        hash: json['hash'] as String,
+      );
+}

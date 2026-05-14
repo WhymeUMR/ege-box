@@ -30,4 +30,15 @@ class AppStrings {
   static const registerSubtitle = 'Пара шагов — и ты с нами';
   static const noAccountYet = 'Нет аккаунта? ';
   static const alreadyHaveAccount = 'Уже есть аккаунт? ';
+
+  // Password requirements hint (показываем в подсказке под полем при ошибке).
+  static const passwordRequirements =
+      'Минимум 8 символов, буква, цифра и спецсимвол';
+
+  // Forgot password
+  static const forgotTitle = 'Забыли пароль?';
+  static const forgotSubtitle =
+      'Введи почту — отправим ссылку для сброса пароля';
+  static const sendResetLink = 'Отправить ссылку';
+  static const rememberedPassword = 'Вспомнили пароль? ';
 }
