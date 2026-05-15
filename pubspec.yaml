@@ -65,6 +65,7 @@ flutter:
   assets:
     - assets/
     - assets/subjects/
+    - assets/mock_exam/demo_variants.json
 
   fonts:
     - family: SpaceGrotesk

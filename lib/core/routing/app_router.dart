@@ -7,6 +7,7 @@ import '../../features/home/presentation/pages/home_page.dart';
 import '../../features/onboarding/presentation/pages/onboarding_class_page.dart';
 import '../../features/onboarding/presentation/pages/onboarding_hours_page.dart';
 import '../../features/onboarding/presentation/pages/onboarding_mock_exam_page.dart';
+import '../../features/onboarding/presentation/pages/mock_exam_take_page.dart';
 import '../../features/onboarding/presentation/pages/onboarding_subjects_page.dart';
 import '../../features/welcome/presentation/pages/welcome_page.dart';
 
@@ -22,6 +23,7 @@ class AppRouter {
   static const onboardingSubjects = '/onboarding/subjects';
   static const onboardingHours = '/onboarding/hours';
   static const onboardingMock = '/onboarding/mock';
+  static const mockExamTake = '/mock-exam/take';
 
   static Route<dynamic> onGenerateRoute(RouteSettings settings) {
     switch (settings.name) {
@@ -41,6 +43,19 @@ class AppRouter {
         return _slideRoute(const OnboardingHoursPage(), settings);
       case onboardingMock:
         return _slideRoute(const OnboardingMockExamPage(), settings);
+      case mockExamTake:
+        final args = settings.arguments as MockExamTakeArgs?;
+        if (args == null) {
+          return _slideRoute(const OnboardingMockExamPage(), settings);
+        }
+        return _slideRoute(
+          MockExamTakePage(
+            subjectId: args.subjectId,
+            subjectTitle: args.subjectTitle,
+            initialScore: args.initialScore,
+          ),
+          settings,
+        );
       case welcome:
       default:
         return MaterialPageRoute(

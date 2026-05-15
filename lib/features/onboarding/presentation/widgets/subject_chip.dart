@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/utils/haptics.dart';
 
 /// Строка-карточка предмета ЕГЭ для вертикального списка.
 /// В выбранном состоянии заливается primary, в обычном — светлый фон с обводкой.
@@ -44,11 +45,15 @@ class SubjectChip extends StatelessWidget {
         child: Material(
           color: Colors.transparent,
           child: InkWell(
-            onTap: disabled && !selected ? null : onTap,
+            onTap: disabled && !selected
+                ? null
+                : () {
+                    AppHaptics.select();
+                    onTap();
+                  },
             borderRadius: BorderRadius.circular(18),
             child: Padding(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
               child: Row(
                 children: [
                   Container(
@@ -112,5 +117,3 @@ class SubjectChip extends StatelessWidget {
     );
   }
 }
-
-

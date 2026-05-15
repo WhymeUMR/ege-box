@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../../../core/constants/app_strings.dart';
 import '../../../../core/routing/app_router.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/utils/haptics.dart';
 import '../../../../shared/widgets/pill_button.dart';
 import '../../../../shared/widgets/swipe_back.dart';
 import '../../../auth/data/auth_service.dart';
@@ -25,6 +26,7 @@ class _OnboardingHoursPageState extends State<OnboardingHoursPage> {
   // Стартуем с серединки — комфортный темп.
   int _hours = 20;
   bool _busy = false;
+  int _lastHapticHours = 20;
 
   @override
   void initState() {
@@ -115,7 +117,14 @@ class _OnboardingHoursPageState extends State<OnboardingHoursPage> {
                     max: _maxHours.toDouble(),
                     divisions: _maxHours - _minHours,
                     value: _hours.toDouble(),
-                    onChanged: (v) => setState(() => _hours = v.round()),
+                    onChanged: (v) {
+                      final next = v.round();
+                      if (next != _lastHapticHours) {
+                        _lastHapticHours = next;
+                        AppHaptics.select();
+                      }
+                      setState(() => _hours = next);
+                    },
                   ),
                 ),
                 Padding(

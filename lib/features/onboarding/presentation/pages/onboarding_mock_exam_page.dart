@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../../../core/constants/app_strings.dart';
 import '../../../../core/routing/app_router.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/utils/haptics.dart';
 import '../../../../shared/widgets/pill_button.dart';
 import '../../../../shared/widgets/swipe_back.dart';
 import '../../../auth/data/auth_service.dart';
@@ -19,6 +20,17 @@ class OnboardingMockExamPage extends StatefulWidget {
 
 class _OnboardingMockExamPageState extends State<OnboardingMockExamPage> {
   String? _selectedSubjectId;
+
+  @override
+  void initState() {
+    super.initState();
+    final auth = context.read<AuthService>();
+    auth.setLastRoute(AppRouter.onboardingMock);
+    final draft = auth.mockExamDraft;
+    if (draft != null) {
+      _selectedSubjectId = draft.subjectId;
+    }
+  }
 
   List<EgeSubject> get _selectedSubjects {
     final selectedIds =
@@ -39,23 +51,37 @@ class _OnboardingMockExamPageState extends State<OnboardingMockExamPage> {
   }
 
   void _onSkip() {
+    context.read<AuthService>().clearMockExamDraft();
+    context.read<AuthService>().setLastRoute(AppRouter.home);
     Navigator.of(context).pushNamedAndRemoveUntil(AppRouter.home, (_) => false);
   }
 
   Future<void> _onOpenMockExam(EgeSubject subject, int currentScore) async {
-    final nextScore = await Navigator.of(context).push<int>(
-      MaterialPageRoute(
-        builder: (_) => MockExamTakePage(
+    final auth = context.read<AuthService>();
+    final nav = Navigator.of(context);
+    final draft = auth.mockExamDraft;
+    if (draft == null || draft.subjectId != subject.id) {
+      await auth.saveMockExamDraft(
+        MockExamDraft(
+          subjectId: subject.id,
           subjectTitle: subject.title,
-          initialScore: currentScore,
+          index: 0,
+          answers: const <String, String>{},
         ),
+      );
+    }
+    await auth.setLastRoute(AppRouter.mockExamTake);
+    final result = await nav.pushNamed(
+      AppRouter.mockExamTake,
+      arguments: MockExamTakeArgs(
+        subjectId: subject.id,
+        subjectTitle: subject.title,
+        initialScore: currentScore,
       ),
     );
+    final nextScore = result is int ? result : null;
     if (!mounted || nextScore == null) return;
-    await context.read<AuthService>().setMockExamScore(
-      subjectId: subject.id,
-      score: nextScore,
-    );
+    await auth.setMockExamScore(subjectId: subject.id, score: nextScore);
   }
 
   @override
@@ -130,6 +156,7 @@ class _OnboardingMockExamPageState extends State<OnboardingMockExamPage> {
                         score: score,
                         selected: _selectedSubjectId == subject.id,
                         onTap: () {
+                          AppHaptics.select();
                           setState(() {
                             _selectedSubjectId = subject.id;
                           });

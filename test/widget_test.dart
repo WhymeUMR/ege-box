@@ -19,6 +19,12 @@ class _MockAuthService extends ChangeNotifier implements AuthService {
   String? get token => null;
 
   @override
+  String? get lastRoute => null;
+
+  @override
+  MockExamDraft? get mockExamDraft => null;
+
+  @override
   Future<void> login({required String email, required String password}) async {}
 
   @override
@@ -49,6 +55,18 @@ class _MockAuthService extends ChangeNotifier implements AuthService {
     required String subjectId,
     required int score,
   }) async {}
+
+  @override
+  Future<void> setLastRoute(String routeName) async {}
+
+  @override
+  Future<void> saveMockExamDraft(MockExamDraft draft) async {}
+
+  @override
+  Future<void> clearMockExamDraft() async {}
+
+  @override
+  Future<void> flushProgress() async {}
 }
 
 Future<void> _setPhoneSurface(WidgetTester tester) async {

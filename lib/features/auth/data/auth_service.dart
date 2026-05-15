@@ -20,6 +20,7 @@ class AuthService extends ChangeNotifier {
   static const _kUsers = 'auth.users';
   static const _kToken = 'auth.token';
   static const _kCurrentEmail = 'auth.current_email';
+  static const _kProgress = 'auth.progress';
 
   /// Жёсткие лимиты длины — используются и в UI (input formatters),
   /// и в серверной валидации.
@@ -37,10 +38,14 @@ class AuthService extends ChangeNotifier {
 
   String? _token;
   AuthUser? _currentUser;
+  String? _lastRoute;
+  MockExamDraft? _mockExamDraft;
 
   bool get isAuthenticated => _token != null && _currentUser != null;
   String? get token => _token;
   AuthUser? get currentUser => _currentUser;
+  String? get lastRoute => _lastRoute;
+  MockExamDraft? get mockExamDraft => _mockExamDraft;
 
   static Future<AuthService> create() async {
     final prefs = await SharedPreferences.getInstance();
@@ -55,6 +60,57 @@ class AuthService extends ChangeNotifier {
     if (user == null) return;
     _token = token;
     _currentUser = user;
+    _loadProgress(email);
+  }
+
+  void _loadProgress(String email) {
+    final raw = _prefs.getString(_kProgress);
+    if (raw == null || raw.isEmpty) return;
+    final json = jsonDecode(raw) as Map<String, dynamic>;
+    final entry = json[email];
+    if (entry is! Map<String, dynamic>) return;
+    _lastRoute = entry['lastRoute'] as String?;
+    final draftJson = entry['mockExamDraft'];
+    if (draftJson is Map<String, dynamic>) {
+      _mockExamDraft = MockExamDraft.fromJson(draftJson);
+    }
+  }
+
+  Future<void> _persistProgress() async {
+    final email = _currentUser?.email;
+    if (email == null) return;
+    final raw = _prefs.getString(_kProgress);
+    final root = raw == null || raw.isEmpty
+        ? <String, dynamic>{}
+        : jsonDecode(raw) as Map<String, dynamic>;
+    root[email] = {
+      'lastRoute': _lastRoute,
+      'mockExamDraft': _mockExamDraft?.toJson(),
+    };
+    await _prefs.setString(_kProgress, jsonEncode(root));
+  }
+
+  Future<void> setLastRoute(String routeName) async {
+    if (_currentUser == null) return;
+    _lastRoute = routeName;
+    await _persistProgress();
+  }
+
+  Future<void> saveMockExamDraft(MockExamDraft draft) async {
+    if (_currentUser == null) return;
+    _mockExamDraft = draft;
+    await _persistProgress();
+  }
+
+  Future<void> clearMockExamDraft() async {
+    if (_currentUser == null) return;
+    _mockExamDraft = null;
+    await _persistProgress();
+  }
+
+  /// Форсируем сохранение текущего прогресса маршрута/пробника.
+  Future<void> flushProgress() async {
+    await _persistProgress();
   }
 
   List<_StoredUser> _readUsers() {
@@ -311,6 +367,8 @@ class AuthService extends ChangeNotifier {
   Future<void> logout() async {
     _token = null;
     _currentUser = null;
+    _lastRoute = null;
+    _mockExamDraft = null;
     await _prefs.remove(_kToken);
     await _prefs.remove(_kCurrentEmail);
     notifyListeners();
@@ -333,6 +391,7 @@ class AuthService extends ChangeNotifier {
       weeklyHours: stored.weeklyHours,
       mockExamScores: stored.mockExamScores,
     );
+    _loadProgress(email);
     notifyListeners();
   }
 
@@ -405,6 +464,36 @@ class AuthException implements Exception {
   final String message;
   @override
   String toString() => message;
+}
+
+class MockExamDraft {
+  const MockExamDraft({
+    required this.subjectId,
+    required this.subjectTitle,
+    required this.index,
+    required this.answers,
+  });
+
+  final String subjectId;
+  final String subjectTitle;
+  final int index;
+  final Map<String, String> answers;
+
+  Map<String, dynamic> toJson() => {
+    'subjectId': subjectId,
+    'subjectTitle': subjectTitle,
+    'index': index,
+    'answers': answers,
+  };
+
+  factory MockExamDraft.fromJson(Map<String, dynamic> json) => MockExamDraft(
+    subjectId: json['subjectId'] as String,
+    subjectTitle: json['subjectTitle'] as String,
+    index: (json['index'] as num).toInt(),
+    answers: (json['answers'] as Map<String, dynamic>).map(
+      (k, v) => MapEntry(k, v as String),
+    ),
+  );
 }
 
 class _StoredUser {

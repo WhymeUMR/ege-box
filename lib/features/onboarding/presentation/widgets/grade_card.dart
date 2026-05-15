@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/utils/haptics.dart';
 
 /// Крупная карточка-выбор класса. Используется в онбординге.
 class GradeCard extends StatelessWidget {
@@ -35,7 +36,10 @@ class GradeCard extends StatelessWidget {
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap: onTap,
+          onTap: () {
+            AppHaptics.select();
+            onTap();
+          },
           borderRadius: BorderRadius.circular(20),
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),

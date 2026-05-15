@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 import '../../core/theme/app_colors.dart';
+import '../../core/utils/haptics.dart';
 
 const _textStyle = TextStyle(
   fontFamily: 'SpaceGrotesk',
@@ -22,11 +23,17 @@ class PillPrimaryButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    void handlePress() {
+      if (onPressed == null) return;
+      AppHaptics.tap();
+      onPressed!.call();
+    }
+
     return SizedBox(
       width: double.infinity,
       height: 56,
       child: ElevatedButton(
-        onPressed: onPressed,
+        onPressed: onPressed == null ? null : handlePress,
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.primary,
           foregroundColor: AppColors.background,
@@ -53,11 +60,17 @@ class PillOutlinedButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    void handlePress() {
+      if (onPressed == null) return;
+      AppHaptics.tap();
+      onPressed!.call();
+    }
+
     return SizedBox(
       width: double.infinity,
       height: 56,
       child: OutlinedButton(
-        onPressed: onPressed,
+        onPressed: onPressed == null ? null : handlePress,
         style: OutlinedButton.styleFrom(
           foregroundColor: AppColors.primary,
           side: const BorderSide(color: AppColors.primary, width: 1.5),
@@ -84,11 +97,17 @@ class PillTelegramButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    void handlePress() {
+      if (onPressed == null) return;
+      AppHaptics.tap();
+      onPressed!.call();
+    }
+
     return SizedBox(
       width: double.infinity,
       height: 56,
       child: ElevatedButton.icon(
-        onPressed: onPressed,
+        onPressed: onPressed == null ? null : handlePress,
         icon: const FaIcon(
           FontAwesomeIcons.telegram,
           size: 22,

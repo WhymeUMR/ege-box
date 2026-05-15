@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/utils/haptics.dart';
 
 class SwitchAuthLink extends StatelessWidget {
   const SwitchAuthLink({
@@ -17,7 +18,10 @@ class SwitchAuthLink extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return InkWell(
-      onTap: onTap,
+      onTap: () {
+        AppHaptics.select();
+        onTap();
+      },
       borderRadius: BorderRadius.circular(12),
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
