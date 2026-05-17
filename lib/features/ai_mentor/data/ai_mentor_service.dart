@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 
 /// Сообщение в чате AI-ментора.
@@ -38,8 +39,7 @@ class AiMentorService {
   AiMentorService({http.Client? client}) : _client = client ?? http.Client();
 
   static const _endpoint = 'https://openrouter.ai/api/v1/chat/completions';
-  static const _apiKey =
-      'REDACTED';
+  static String get _apiKey => dotenv.env['OPENROUTER_API_KEY'] ?? '';
   // `openrouter/free` — авто-роутер OpenRouter, сам выбирает доступную
   // бесплатную модель. Так не зависим от устаревания конкретных моделей.
   static const _model = 'openrouter/free';
