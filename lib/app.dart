@@ -3,14 +3,23 @@ import 'package:provider/provider.dart';
 
 import 'core/constants/app_strings.dart';
 import 'core/routing/app_router.dart';
+import 'core/services/activity_service.dart';
+import 'core/services/topic_stats_service.dart';
 import 'core/theme/app_theme.dart';
 import 'features/auth/data/auth_service.dart';
 import 'features/onboarding/presentation/pages/mock_exam_take_page.dart';
 
 class EgeBoxApp extends StatefulWidget {
-  const EgeBoxApp({super.key, required this.authService});
+  const EgeBoxApp({
+    super.key,
+    required this.authService,
+    required this.activityService,
+    required this.topicStatsService,
+  });
 
   final AuthService authService;
+  final ActivityService activityService;
+  final TopicStatsService topicStatsService;
 
   @override
   State<EgeBoxApp> createState() => _EgeBoxAppState();
@@ -40,8 +49,16 @@ class _EgeBoxAppState extends State<EgeBoxApp> with WidgetsBindingObserver {
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider<AuthService>.value(
-      value: widget.authService,
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider<AuthService>.value(value: widget.authService),
+        ChangeNotifierProvider<ActivityService>.value(
+          value: widget.activityService,
+        ),
+        ChangeNotifierProvider<TopicStatsService>.value(
+          value: widget.topicStatsService,
+        ),
+      ],
       child: MaterialApp(
         title: AppStrings.appTitle,
         theme: AppTheme.theme,

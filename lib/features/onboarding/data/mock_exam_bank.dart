@@ -16,9 +16,21 @@ class MockExamTask {
 
   /// Краткая метка источника: предмет/часть/тип. Показывается в
   /// тренажёре и в карточках главного экрана.
+  /// Формат: «ФИПИ. ЕГЭ ..., задание N (тема)» — из круглых скобок
+  /// автоматически вытаскиваем `topic` для агрегации статистики
+  /// по слабым темам.
   final String source;
   final String prompt;
   final String correctAnswer;
+
+  /// Извлечённая тема — то, что в `source` стоит в круглых скобках,
+  /// с большой буквы. Если скобок нет, возвращаем сам `source`.
+  String get topic {
+    final match = RegExp(r'\(([^)]+)\)').firstMatch(source);
+    final raw = (match?.group(1) ?? source).trim();
+    if (raw.isEmpty) return source;
+    return raw[0].toUpperCase() + raw.substring(1);
+  }
 }
 
 const mockExamBankBySubject = <String, List<MockExamTask>>{

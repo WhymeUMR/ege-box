@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/routing/app_router.dart';
+import '../../../../core/services/activity_service.dart';
 import '../../../auth/data/auth_service.dart';
 import '../../../onboarding/data/ege_subjects.dart';
 import '../../../onboarding/data/mock_exam_bank.dart';
@@ -30,16 +31,31 @@ class TasksSection extends StatelessWidget {
         .toList(growable: false);
     final weeklyHours = user?.weeklyHours ?? 0;
 
-    // Пул реальных задач — конкатенация банков по выбранным предметам.
-    // Каждая задача снабжена ссылкой на предмет, чтобы показать иконку.
-    final pool = <_TaskWithSubject>[];
-    for (final s in selected) {
+    // Персональный план: ранжируем предметы по результатам пробников
+    // (наименее освоенные — выше). Из топ-2 слабых предметов берём
+    // первые задачи банка для срочной проработки. Это и есть «AI
+    // находит пробелы и строит маршрут» из ТЗ кейса.
+    final scores = user?.mockExamScores ?? const <String, int>{};
+    final priority = [...selected]
+      ..sort((a, b) {
+        final sa = scores[a.id];
+        final sb = scores[b.id];
+        // Предметы без оценки — наверх (нужно собрать данные).
+        if (sa == null && sb != null) return -1;
+        if (sa != null && sb == null) return 1;
+        if (sa == null && sb == null) return 0;
+        return sa!.compareTo(sb!);
+      });
+
+    final today = <_TaskWithSubject>[];
+    for (final s in priority) {
       final bank = mockExamBankBySubject[s.id] ?? const <MockExamTask>[];
       for (final t in bank) {
-        pool.add(_TaskWithSubject(subject: s, task: t));
+        today.add(_TaskWithSubject(subject: s, task: t));
+        if (today.length >= 3) break;
       }
+      if (today.length >= 3) break;
     }
-    final today = _todayTasks(pool);
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(24, 16, 24, 120),
@@ -72,7 +88,12 @@ class TasksSection extends StatelessWidget {
             ),
           )
         else ...[
-          _GroupLabel('На сегодня', counter: today.length),
+          _GroupLabel(
+            scores.containsKey(today.first.subject.id)
+                ? 'На сегодня · слабые темы'
+                : 'На сегодня',
+            counter: today.length,
+          ),
           const SizedBox(height: 10),
           for (final entry in today) ...[
             _RealTaskCard(entry: entry),
@@ -93,13 +114,6 @@ class TasksSection extends StatelessWidget {
     );
   }
 
-  /// Детерминированный срез на сегодня: 3 задачи из пула, сдвиг по weekday.
-  List<_TaskWithSubject> _todayTasks(List<_TaskWithSubject> pool) {
-    if (pool.isEmpty) return const [];
-    final take = pool.length < 3 ? pool.length : 3;
-    final offset = (DateTime.now().weekday - 1) % pool.length;
-    return [for (var i = 0; i < take; i++) pool[(offset + i) % pool.length]];
-  }
 }
 
 class _TaskWithSubject {
@@ -110,17 +124,26 @@ class _TaskWithSubject {
 }
 
 /// Лента активности — одна неделя в стиле GitHub: 7 квадратов (Пн–Вс).
-/// Реальных данных пока нет → все дни показываются как «0 активности».
-/// Сегодняшний день обводится primary-бордером.
+/// Реактивна на `ActivityService`: при сохранении новой задачи день
+/// перекрашивается без перезагрузки экрана.
 class _WeekStrip extends StatelessWidget {
   const _WeekStrip();
 
   static const _labels = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
 
+  Color _colorForLevel(int level) {
+    if (level == 0) return AppColors.text.withValues(alpha: 0.06);
+    const alphas = [0.0, 0.22, 0.42, 0.65, 0.95];
+    return AppColors.primary.withValues(alpha: alphas[level]);
+  }
+
   @override
   Widget build(BuildContext context) {
-    final today = DateTime.now().weekday - 1; // 0..6
-    final emptyColor = AppColors.text.withValues(alpha: 0.06);
+    final activity = context.watch<ActivityService>();
+    final now = DateTime.now();
+    final monday = now.subtract(Duration(days: now.weekday - 1));
+    final todayIdx = now.weekday - 1; // 0..6
+    final daysActive = activity.daysActiveThisWeek();
 
     return TileCard(
       padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
@@ -140,7 +163,7 @@ class _WeekStrip extends StatelessWidget {
               ),
               const Spacer(),
               Text(
-                '0 из 7 дней',
+                '$daysActive из 7 дней',
                 style: TextStyle(
                   fontFamily: 'SpaceGrotesk',
                   fontSize: 12,
@@ -161,13 +184,18 @@ class _WeekStrip extends StatelessWidget {
                     Expanded(
                       child: Column(
                         children: [
-                          Container(
+                          AnimatedContainer(
+                            duration: const Duration(milliseconds: 220),
                             width: cell,
                             height: cell,
                             decoration: BoxDecoration(
-                              color: emptyColor,
+                              color: _colorForLevel(
+                                activity.levelForDate(
+                                  monday.add(Duration(days: d)),
+                                ),
+                              ),
                               borderRadius: BorderRadius.circular(8),
-                              border: d == today
+                              border: d == todayIdx
                                   ? Border.all(
                                       color: AppColors.primary,
                                       width: 2,
@@ -181,10 +209,10 @@ class _WeekStrip extends StatelessWidget {
                             style: TextStyle(
                               fontFamily: 'SpaceGrotesk',
                               fontSize: 11,
-                              fontWeight: d == today
+                              fontWeight: d == todayIdx
                                   ? FontWeight.w700
                                   : FontWeight.w500,
-                              color: d == today
+                              color: d == todayIdx
                                   ? AppColors.primary
                                   : AppColors.text.withValues(alpha: 0.55),
                             ),

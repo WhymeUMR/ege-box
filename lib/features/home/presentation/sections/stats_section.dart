@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../../../core/services/topic_stats_service.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../auth/data/auth_service.dart';
 import '../../../onboarding/data/ege_subjects.dart';
@@ -72,6 +73,8 @@ class StatsSection extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 24),
+        const _WeakTopicsBlock(),
+        const SizedBox(height: 18),
         Padding(
           padding: const EdgeInsets.only(left: 4, bottom: 10),
           child: Text(
@@ -275,6 +278,128 @@ class _SubjectProgressTile extends StatelessWidget {
               color: score == null
                   ? AppColors.text.withValues(alpha: 0.45)
                   : AppColors.text,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Блок «Слабые темы» — топ-3 тем с максимальной долей ошибок,
+/// агрегированные `TopicStatsService` по реальным попыткам.
+class _WeakTopicsBlock extends StatelessWidget {
+  const _WeakTopicsBlock();
+
+  @override
+  Widget build(BuildContext context) {
+    final stats = context.watch<TopicStatsService>();
+    final weak = stats.weakest();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(left: 4, bottom: 10),
+          child: Text(
+            'Слабые темы',
+            style: TextStyle(
+              fontFamily: 'SpaceGrotesk',
+              fontSize: 17,
+              fontWeight: FontWeight.w700,
+              color: AppColors.text.withValues(alpha: 0.85),
+            ),
+          ),
+        ),
+        if (weak.isEmpty)
+          TileCard(
+            child: Text(
+              'Реши пробник или несколько задач — и AI покажет, где у тебя '
+              'больше всего ошибок.',
+              style: TextStyle(
+                fontFamily: 'SpaceGrotesk',
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: AppColors.text.withValues(alpha: 0.7),
+                height: 1.35,
+              ),
+            ),
+          )
+        else
+          for (final s in weak) ...[
+            _WeakTopicTile(stats: s),
+            const SizedBox(height: 10),
+          ],
+      ],
+    );
+  }
+}
+
+class _WeakTopicTile extends StatelessWidget {
+  const _WeakTopicTile({required this.stats});
+
+  final TopicStats stats;
+
+  @override
+  Widget build(BuildContext context) {
+    final pct = (stats.errorRate * 100).round();
+    return TileCard(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      child: Row(
+        children: [
+          Container(
+            width: 38,
+            height: 38,
+            decoration: BoxDecoration(
+              color: AppColors.primary.withValues(alpha: 0.14),
+              borderRadius: BorderRadius.circular(11),
+            ),
+            child: const Icon(
+              Icons.flag_outlined,
+              color: AppColors.primary,
+              size: 20,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  stats.topic,
+                  style: const TextStyle(
+                    fontFamily: 'SpaceGrotesk',
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.text,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  '${stats.errors} из ${stats.attempts} попыток с ошибкой',
+                  style: TextStyle(
+                    fontFamily: 'SpaceGrotesk',
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w500,
+                    color: AppColors.text.withValues(alpha: 0.6),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            decoration: BoxDecoration(
+              color: AppColors.primary.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(999),
+            ),
+            child: Text(
+              '$pct%',
+              style: const TextStyle(
+                fontFamily: 'SpaceGrotesk',
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+                color: AppColors.primary,
+              ),
             ),
           ),
         ],

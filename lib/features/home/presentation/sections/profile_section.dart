@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../../../core/routing/app_router.dart';
+import '../../../../core/services/activity_service.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../shared/widgets/pill_button.dart';
 import '../../../auth/data/auth_service.dart';
@@ -49,7 +50,9 @@ class ProfileSection extends StatelessWidget {
           initials: _initials(user?.name),
         ),
         const SizedBox(height: 12),
-        const _StreakPill(days: 0),
+        Consumer<ActivityService>(
+          builder: (context, a, _) => _StreakPill(days: a.currentStreak()),
+        ),
         const SizedBox(height: 16),
         _MenuRow(
           icon: Icons.school_outlined,
