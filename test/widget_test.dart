@@ -1,8 +1,11 @@
 import 'package:ege_box/app.dart';
 import 'package:ege_box/core/constants/app_strings.dart';
+import 'package:ege_box/core/services/activity_service.dart';
+import 'package:ege_box/core/services/topic_stats_service.dart';
 import 'package:ege_box/features/auth/data/auth_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 // Размер тестового экрана близкий к реальному телефону.
 const _phoneSize = Size(390, 844);
@@ -85,8 +88,15 @@ void main() {
     tester,
   ) async {
     await _setPhoneSurface(tester);
+    SharedPreferences.setMockInitialValues({});
     final authService = _MockAuthService();
-    await tester.pumpWidget(EgeBoxApp(authService: authService));
+    final activityService = await ActivityService.create();
+    final topicStatsService = await TopicStatsService.create();
+    await tester.pumpWidget(EgeBoxApp(
+      authService: authService,
+      activityService: activityService,
+      topicStatsService: topicStatsService,
+    ));
     // Дать анимациям выезда отыграть, плюс часть фразы напечататься.
     await tester.pump(const Duration(seconds: 2));
 
@@ -104,8 +114,15 @@ void main() {
 
   testWidgets('Tap "Войти" navigates to login', (tester) async {
     await _setPhoneSurface(tester);
+    SharedPreferences.setMockInitialValues({});
     final authService = _MockAuthService();
-    await tester.pumpWidget(EgeBoxApp(authService: authService));
+    final activityService = await ActivityService.create();
+    final topicStatsService = await TopicStatsService.create();
+    await tester.pumpWidget(EgeBoxApp(
+      authService: authService,
+      activityService: activityService,
+      topicStatsService: topicStatsService,
+    ));
     await tester.pump(const Duration(seconds: 2));
 
     await tester.tap(find.widgetWithText(ElevatedButton, AppStrings.signIn));
