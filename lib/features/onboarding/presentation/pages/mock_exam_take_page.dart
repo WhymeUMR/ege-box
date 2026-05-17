@@ -8,6 +8,8 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/utils/haptics.dart';
 import '../../../../shared/widgets/pill_button.dart';
 import '../../../../shared/widgets/swipe_back.dart';
+import '../../../ai_mentor/data/ai_mentor_service.dart';
+import '../../../ai_mentor/presentation/ai_mentor_sheet.dart';
 import '../../../auth/data/auth_service.dart';
 import '../../data/mock_exam_bank.dart';
 
@@ -16,11 +18,16 @@ class MockExamTakeArgs {
     required this.subjectId,
     required this.subjectTitle,
     required this.initialScore,
+    this.isPractice = false,
   });
 
   final String subjectId;
   final String subjectTitle;
   final int initialScore;
+
+  /// `true` — режим тренировки (запуск из Tasks). В этом режиме внизу
+  /// показываем кнопку «Спросить у AI ментора». `false` — пробник.
+  final bool isPractice;
 }
 
 class MockExamTakePage extends StatefulWidget {
@@ -29,11 +36,13 @@ class MockExamTakePage extends StatefulWidget {
     required this.subjectId,
     required this.subjectTitle,
     required this.initialScore,
+    this.isPractice = false,
   });
 
   final String subjectId;
   final String subjectTitle;
   final int initialScore;
+  final bool isPractice;
 
   @override
   State<MockExamTakePage> createState() => _MockExamTakePageState();
@@ -112,6 +121,21 @@ class _MockExamTakePageState extends State<MockExamTakePage> {
       _persistDraft();
       _finishExam();
     }
+  }
+
+  void _openAiMentor() {
+    _persistTypedAnswer();
+    AppHaptics.tap();
+    showAiMentorSheet(
+      context: context,
+      task: AiTaskContext(
+        subjectTitle: widget.subjectTitle,
+        taskSource: _task.source,
+        taskPrompt: _task.prompt,
+        correctAnswer: _task.correctAnswer,
+        userAnswer: _answers[_task.id],
+      ),
+    );
   }
 
   void _persistDraft() {
@@ -602,6 +626,12 @@ class _MockExamTakePageState extends State<MockExamTakePage> {
                               ),
                             ),
                           ),
+                          if (widget.isPractice) ...[
+                            const SizedBox(height: 10),
+                            _AskAiButton(
+                              onPressed: _openAiMentor,
+                            ),
+                          ],
                         ],
                       ),
                     ),
@@ -622,4 +652,78 @@ String _formatTimer(int seconds) {
   final m = ((s % 3600) ~/ 60).toString().padLeft(2, '0');
   final sec = (s % 60).toString().padLeft(2, '0');
   return '$h:$m:$sec';
+}
+
+/// Кнопка вызова AI-ментора, видна только в режиме тренировки.
+/// Стиль: пилюля с primary-обводкой, иконка sparkles, лёгкая
+/// анимация нажатия — соответствует общему языку приложения.
+class _AskAiButton extends StatefulWidget {
+  const _AskAiButton({required this.onPressed});
+
+  final VoidCallback onPressed;
+
+  @override
+  State<_AskAiButton> createState() => _AskAiButtonState();
+}
+
+class _AskAiButtonState extends State<_AskAiButton> {
+  bool _pressed = false;
+
+  void _setPressed(bool v) {
+    if (_pressed == v) return;
+    setState(() => _pressed = v);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTapDown: (_) => _setPressed(true),
+      onTapUp: (_) => _setPressed(false),
+      onTapCancel: () => _setPressed(false),
+      onTap: widget.onPressed,
+      child: AnimatedScale(
+        scale: _pressed ? 0.97 : 1,
+        duration: const Duration(milliseconds: 160),
+        curve: Curves.easeOutCubic,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          width: double.infinity,
+          height: 52,
+          decoration: BoxDecoration(
+            color: _pressed
+                ? AppColors.primary.withValues(alpha: 0.14)
+                : AppColors.primary.withValues(alpha: 0.08),
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(
+              color: AppColors.primary.withValues(alpha: _pressed ? 0.55 : 0.35),
+              width: 1.4,
+            ),
+          ),
+          alignment: Alignment.center,
+          child: const Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.auto_awesome_rounded,
+                color: AppColors.primary,
+                size: 19,
+              ),
+              SizedBox(width: 8),
+              Text(
+                'Спросить у AI ментора',
+                style: TextStyle(
+                  fontFamily: 'SpaceGrotesk',
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.primary,
+                  letterSpacing: 0.2,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }

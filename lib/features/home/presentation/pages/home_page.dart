@@ -1,63 +1,57 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 
-import '../../../../core/routing/app_router.dart';
 import '../../../../core/theme/app_colors.dart';
-import '../../../../shared/widgets/pill_button.dart';
-import '../../../auth/data/auth_service.dart';
+import '../sections/materials_section.dart';
+import '../sections/mocks_section.dart';
+import '../sections/profile_section.dart';
+import '../sections/stats_section.dart';
+import '../sections/tasks_section.dart';
+import '../widgets/main_nav_bar.dart';
 
-class HomePage extends StatelessWidget {
+/// Главный экран приложения с пятью разделами и стеклянным навбаром.
+class HomePage extends StatefulWidget {
   const HomePage({super.key});
 
-  Future<void> _logout(BuildContext context) async {
-    await context.read<AuthService>().logout();
-    if (!context.mounted) return;
-    Navigator.of(context).pushNamedAndRemoveUntil(
-      AppRouter.welcome,
-      (_) => false,
-    );
-  }
+  @override
+  State<HomePage> createState() => _HomePageState();
+}
+
+class _HomePageState extends State<HomePage> {
+  MainNavItem _current = MainNavItem.tasks;
 
   @override
   Widget build(BuildContext context) {
-    final user = context.watch<AuthService>().currentUser;
-
     return Scaffold(
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(24, 16, 24, 16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const SizedBox(height: 16),
-              Text(
-                'Привет, ${user?.name ?? ''}!',
-                style: const TextStyle(
-                  fontFamily: 'SpaceGrotesk',
-                  fontSize: 28,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.text,
-                  height: 1.1,
-                ),
+      backgroundColor: AppColors.background,
+      body: Stack(
+        children: [
+          Positioned.fill(
+            child: SafeArea(
+              bottom: false,
+              child: IndexedStack(
+                index: MainNavItem.values.indexOf(_current),
+                children: const [
+                  TasksSection(),
+                  StatsSection(),
+                  MaterialsSection(),
+                  MocksSection(),
+                  ProfileSection(),
+                ],
               ),
-              const SizedBox(height: 8),
-              Text(
-                user?.email ?? '',
-                style: TextStyle(
-                  fontFamily: 'SpaceGrotesk',
-                  fontSize: 15,
-                  fontWeight: FontWeight.w500,
-                  color: AppColors.text.withValues(alpha: 0.6),
-                ),
-              ),
-              const Spacer(),
-              PillPrimaryButton(
-                label: 'Выйти',
-                onPressed: () => _logout(context),
-              ),
-            ],
+            ),
           ),
-        ),
+          Positioned(
+            left: 16,
+            right: 16,
+            bottom: MediaQuery.of(context).padding.bottom + 4,
+            child: Center(
+              child: MainNavBar(
+                selectedItem: _current,
+                onSelected: (item) => setState(() => _current = item),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

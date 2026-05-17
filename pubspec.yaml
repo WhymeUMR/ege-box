@@ -38,6 +38,8 @@ dependencies:
   font_awesome_flutter: ^11.0.0
   shared_preferences: ^2.5.5
   crypto: ^3.0.7
+  http: ^1.2.2
+  flutter_markdown: ^0.7.4+1
 
 dev_dependencies:
   flutter_test:

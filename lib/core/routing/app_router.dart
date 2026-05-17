@@ -53,6 +53,7 @@ class AppRouter {
             subjectId: args.subjectId,
             subjectTitle: args.subjectTitle,
             initialScore: args.initialScore,
+            isPractice: args.isPractice,
           ),
           settings,
         );
